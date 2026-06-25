@@ -1,0 +1,13 @@
+# LLM + embeddings
+google-genai>=1.0.0
+# RAG
+pypdf>=4.0.0
+numpy>=1.26,<3
+# Channels
+streamlit>=1.40
+fastapi>=0.115
+uvicorn[standard]>=0.30
+# LLMOps logging (skinny avoids the heavy server/UI deps -> small image)
+mlflow-skinny>=2.16
+# Config
+python-dotenv>=1.0

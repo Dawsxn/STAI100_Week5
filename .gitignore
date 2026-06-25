@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+logs/
+mlruns/
+vector_store/
+*.egg-info/
+.DS_Store
+.pytest_cache/
+.ipynb_checkpoints/

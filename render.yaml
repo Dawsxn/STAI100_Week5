@@ -1,0 +1,21 @@
+# Render Blueprint — one Docker web service running both channels behind Caddy.
+# Deploy: push to GitHub, then in Render → New → Blueprint, point at this repo.
+services:
+  - type: web
+    name: stai100-week5-bot
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: GEMINI_API_KEY   # set this as a SECRET in the Render dashboard (do not commit)
+        sync: false
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: GEN_MODEL
+        value: gemini-2.5-flash
+      - key: EMBED_MODEL
+        value: gemini-embedding-001
+      - key: FREE_TIER
+        value: "true"

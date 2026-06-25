@@ -1,0 +1,5 @@
+# Force LF for files the Linux container executes (avoid Windows CRLF breaking them).
+*.sh text eol=lf
+Caddyfile text eol=lf
+Dockerfile text eol=lf
+start.sh text eol=lf

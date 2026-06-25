@@ -1,0 +1,28 @@
+name: Docker image size
+
+# Builds the image in the cloud and fails if it exceeds the 500MB budget.
+# Gives a verifiable size number without needing Docker installed locally.
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build-and-measure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t week5-bot:ci .
+
+      - name: Report image size
+        run: |
+          SIZE=$(docker image inspect week5-bot:ci --format '{{.Size}}')
+          MB=$(awk "BEGIN {printf \"%.1f\", ${SIZE}/1048576}")
+          LIMIT=500
+          echo "Docker image size: ${MB} MB (budget: ${LIMIT} MB)"
+          echo "### 🐳 Docker image size: ${MB} MB / ${LIMIT} MB budget" >> "$GITHUB_STEP_SUMMARY"
+          awk "BEGIN {exit !(${SIZE}/1048576 < ${LIMIT})}" \
+            && echo "✅ Under budget" \
+            || { echo "❌ Over the ${LIMIT}MB budget"; exit 1; }

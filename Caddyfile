@@ -1,0 +1,17 @@
+# Reverse proxy: one public port ($PORT on Render, 8080 locally) fronts both servers.
+#   /chat/stream, /healthz, /docs, /openapi.json, /redoc  -> FastAPI  (127.0.0.1:8000)
+#   everything else (UI + Streamlit's /_stcore websocket)  -> Streamlit (127.0.0.1:8501)
+{
+	admin off
+	auto_https off
+}
+
+:{$PORT:8080} {
+	@api path /chat/stream* /healthz /docs* /openapi.json /redoc*
+	handle @api {
+		reverse_proxy 127.0.0.1:8000
+	}
+	handle {
+		reverse_proxy 127.0.0.1:8501
+	}
+}
