@@ -36,15 +36,21 @@ RUN SP=/opt/venv/lib/python3.12/site-packages ; \
 # (libarrow_substrait/acero/dataset.so), so those CANNOT be removed — doing so breaks
 # `import pyarrow` itself.
 
+# ── Stage 1b: cap-free caddy ─────────────────────────────────────────────────────
+# The official caddy binary carries cap_net_bind_service, which the kernel refuses to
+# exec under Render's no-new-privileges policy (exit 126). A plain `cp` drops the
+# capability xattr. Doing this in its own stage means only ONE (cap-free) ~45MB binary
+# lands in the runtime image — a cp in the runtime stage would leave the original behind
+# in the COPY layer as dead weight.
+FROM caddy:2 AS caddy
+RUN cp /usr/bin/caddy /caddy-nocap
+
 # ── Stage 2: slim runtime ───────────────────────────────────────────────────────
 FROM python:3.12-slim AS runtime
 
-# Caddy reverse-proxy binary from the official image. We `cp` it (which drops the file's
-# cap_net_bind_service capability) — that capability triggers
-# "exec: caddy: Operation not permitted" (exit 126) under Render's no-new-privileges
-# policy. We run as root and bind a high $PORT, so the capability isn't needed.
-COPY --from=caddy:2 /usr/bin/caddy /usr/bin/caddy.orig
-RUN cp /usr/bin/caddy.orig /usr/bin/caddy && rm /usr/bin/caddy.orig && chmod 0755 /usr/bin/caddy
+# Caddy reverse proxy — single cap-free binary from the stage above (we run as root on a
+# high $PORT, so cap_net_bind_service isn't needed).
+COPY --from=caddy /caddy-nocap /usr/bin/caddy
 
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
