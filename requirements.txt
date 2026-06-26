@@ -6,8 +6,8 @@ numpy>=1.26,<3
 # Channels
 streamlit>=1.40
 fastapi>=0.115
-uvicorn[standard]>=0.30
-# LLMOps logging (skinny avoids the heavy server/UI deps -> small image)
-mlflow-skinny>=2.16
+uvicorn>=0.30
+# LLMOps logging — skinny + pinned to 2.x (3.x pulls opentelemetry + databricks-sdk)
+mlflow-skinny>=2.16,<3
 # Config
 python-dotenv>=1.0
