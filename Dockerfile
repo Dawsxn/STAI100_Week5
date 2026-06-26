@@ -31,12 +31,10 @@ RUN SP=/opt/venv/lib/python3.12/site-packages ; \
     find /opt/venv -name "*.pyi" -delete ; \
     rm -rf $SP/pip $SP/pip-* /opt/venv/bin/pip /opt/venv/bin/pip3* ; \
     rm -rf $SP/pydeck $SP/pydeck-* ; \
-    rm -rf $SP/pyarrow/include $SP/pyarrow/tests $SP/pyarrow/parquet ; \
-    rm -f $SP/pyarrow/_parquet* $SP/pyarrow/_dataset* $SP/pyarrow/_acero* \
-          $SP/pyarrow/_flight* $SP/pyarrow/_substrait* $SP/pyarrow/_orc* ; \
-    rm -f $SP/pyarrow/libparquet.so* $SP/pyarrow/libarrow_dataset.so* \
-          $SP/pyarrow/libarrow_acero.so* $SP/pyarrow/libarrow_flight*.so* \
-          $SP/pyarrow/libarrow_substrait.so* $SP/pyarrow/libgandiva.so*
+    rm -rf $SP/pyarrow/include $SP/pyarrow/tests
+# NB: pyarrow's core (pyarrow.lib) is dynamically linked against the engine libs
+# (libarrow_substrait/acero/dataset.so), so those CANNOT be removed — doing so breaks
+# `import pyarrow` itself.
 
 # ── Stage 2: slim runtime ───────────────────────────────────────────────────────
 FROM python:3.12-slim AS runtime
