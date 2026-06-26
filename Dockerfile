@@ -55,11 +55,5 @@ COPY app ./app
 COPY api.py streamlit_app.py Caddyfile start.sh ./
 RUN chmod +x start.sh
 
-# Build-time smoke test: verify the stripped libraries still import and the app wires
-# up (mock mode, fully offline). Fails the build before a bad strip can reach runtime.
-RUN LOG_DIR=/tmp/l MLRUNS_DIR=/tmp/m LLM_PROVIDER=mock \
-    python -c "import streamlit, altair, pandas, pyarrow, numpy, fastapi, mlflow, pypdf; from google import genai; import api; print('smoke import OK')" \
-    && rm -rf /tmp/l /tmp/m
-
 EXPOSE 8080
 CMD ["./start.sh"]

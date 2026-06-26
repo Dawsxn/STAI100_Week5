@@ -1,7 +1,8 @@
 name: Docker image size
 
-# Builds the image in the cloud and fails if it exceeds the 500MB budget.
-# Gives a verifiable size number without needing Docker installed locally.
+# Builds the image in the cloud, verifies it imports, and fails if it exceeds the
+# 500MB budget. The import error (if any) and the measured size are emitted as ::error::
+# annotations so they are readable via the API without installing Docker locally.
 on:
   push:
     branches: [main, master]
@@ -16,14 +17,26 @@ jobs:
       - name: Build image
         run: docker build -t week5-bot:ci .
 
+      - name: Smoke import (offline, mock mode)
+        run: |
+          docker run --rm -e LLM_PROVIDER=mock -e LOG_DIR=/tmp/l -e MLRUNS_DIR=/tmp/m \
+            week5-bot:ci python -c \
+            "import streamlit, altair, pandas, pyarrow, numpy, fastapi, mlflow, pypdf; from google import genai; import api; print('smoke import OK')" \
+            2> /tmp/err.txt && cat /tmp/err.txt || {
+              echo "::error title=SmokeImport::$(tr '\n' ' ' < /tmp/err.txt | tail -c 600)";
+              cat /tmp/err.txt; exit 1;
+            }
+
       - name: Report image size
         run: |
           SIZE=$(docker image inspect week5-bot:ci --format '{{.Size}}')
           MB=$(awk "BEGIN {printf \"%.1f\", ${SIZE}/1048576}")
           LIMIT=500
           echo "Docker image size: ${MB} MB (budget: ${LIMIT} MB)"
-          echo "::notice title=DockerImageSizeMB::${MB}"
           echo "### 🐳 Docker image size: ${MB} MB / ${LIMIT} MB budget" >> "$GITHUB_STEP_SUMMARY"
-          awk "BEGIN {exit !(${SIZE}/1048576 < ${LIMIT})}" \
-            && echo "✅ Under budget" \
-            || { echo "❌ Over the ${LIMIT}MB budget"; exit 1; }
+          if awk "BEGIN {exit !(${SIZE}/1048576 < ${LIMIT})}"; then
+            echo "✅ Under budget (${MB} MB)"
+          else
+            echo "::error title=ImageSizeMB::${MB} MB exceeds ${LIMIT} MB budget"
+            exit 1
+          fi
