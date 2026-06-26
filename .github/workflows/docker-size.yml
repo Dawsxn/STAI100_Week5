@@ -22,6 +22,7 @@ jobs:
           MB=$(awk "BEGIN {printf \"%.1f\", ${SIZE}/1048576}")
           LIMIT=500
           echo "Docker image size: ${MB} MB (budget: ${LIMIT} MB)"
+          echo "::notice title=DockerImageSizeMB::${MB}"
           echo "### 🐳 Docker image size: ${MB} MB / ${LIMIT} MB budget" >> "$GITHUB_STEP_SUMMARY"
           awk "BEGIN {exit !(${SIZE}/1048576 < ${LIMIT})}" \
             && echo "✅ Under budget" \

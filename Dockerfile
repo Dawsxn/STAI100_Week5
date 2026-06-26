@@ -17,15 +17,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends binutils \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Trim: strip debug symbols from shared libs (numpy/pandas/pyarrow/etc. carry large
-# symbol tables) and drop tests, C headers, and bytecode caches.
-RUN find /opt/venv -name "*.so" -exec strip --strip-unneeded {} + 2>/dev/null || true ; \
+# Trim: strip debug symbols from shared libs (numpy/pandas/pyarrow carry large symbol
+# tables), drop tests/headers/stubs/caches, remove pip, pydeck (unused), and pyarrow's
+# optional engines (parquet/dataset/flight/acero/substrait — never used by this app).
+# Each removal below was verified locally to keep `import streamlit`/`import api` working,
+# and the build-time smoke test in the runtime stage re-verifies it.
+RUN SP=/opt/venv/lib/python3.12/site-packages ; \
+    find /opt/venv -name "*.so" -exec strip --strip-unneeded {} + 2>/dev/null || true ; \
     find /opt/venv -type d -name "__pycache__" -prune -exec rm -rf {} + ; \
-    find /opt/venv -type d -name "tests" -prune -exec rm -rf {} + ; \
-    find /opt/venv -type d -name "test" -prune -exec rm -rf {} + ; \
+    find /opt/venv -type d -name tests -prune -exec rm -rf {} + ; \
+    find /opt/venv -type d -name test -prune -exec rm -rf {} + ; \
     find /opt/venv -name "*.pyc" -delete ; \
-    rm -rf /opt/venv/lib/python*/site-packages/pyarrow/include ; \
-    rm -rf /opt/venv/lib/python*/site-packages/pyarrow/tests
+    find /opt/venv -name "*.pyi" -delete ; \
+    rm -rf $SP/pip $SP/pip-* /opt/venv/bin/pip /opt/venv/bin/pip3* ; \
+    rm -rf $SP/pydeck $SP/pydeck-* ; \
+    rm -rf $SP/pyarrow/include $SP/pyarrow/tests $SP/pyarrow/parquet ; \
+    rm -f $SP/pyarrow/_parquet* $SP/pyarrow/_dataset* $SP/pyarrow/_acero* \
+          $SP/pyarrow/_flight* $SP/pyarrow/_substrait* $SP/pyarrow/_orc* ; \
+    rm -f $SP/pyarrow/libparquet.so* $SP/pyarrow/libarrow_dataset.so* \
+          $SP/pyarrow/libarrow_acero.so* $SP/pyarrow/libarrow_flight*.so* \
+          $SP/pyarrow/libarrow_substrait.so* $SP/pyarrow/libgandiva.so*
 
 # ── Stage 2: slim runtime ───────────────────────────────────────────────────────
 FROM python:3.12-slim AS runtime
