@@ -60,6 +60,7 @@ ENV PATH="/opt/venv/bin:$PATH" \
 WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 COPY app ./app
+COPY .streamlit ./.streamlit
 COPY api.py streamlit_app.py Caddyfile start.sh ./
 RUN chmod +x start.sh
 
