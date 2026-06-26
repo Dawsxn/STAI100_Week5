@@ -39,8 +39,12 @@ RUN SP=/opt/venv/lib/python3.12/site-packages ; \
 # ── Stage 2: slim runtime ───────────────────────────────────────────────────────
 FROM python:3.12-slim AS runtime
 
-# Caddy reverse-proxy binary, copied from the official image (no extra apt deps).
-COPY --from=caddy:2 /usr/bin/caddy /usr/bin/caddy
+# Caddy reverse-proxy binary from the official image. We `cp` it (which drops the file's
+# cap_net_bind_service capability) — that capability triggers
+# "exec: caddy: Operation not permitted" (exit 126) under Render's no-new-privileges
+# policy. We run as root and bind a high $PORT, so the capability isn't needed.
+COPY --from=caddy:2 /usr/bin/caddy /usr/bin/caddy.orig
+RUN cp /usr/bin/caddy.orig /usr/bin/caddy && rm /usr/bin/caddy.orig && chmod 0755 /usr/bin/caddy
 
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \

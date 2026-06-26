@@ -17,6 +17,11 @@ jobs:
       - name: Build image
         run: docker build -t week5-bot:ci .
 
+      - name: Verify caddy execs under no-new-privileges (Render-like)
+        run: |
+          docker run --rm --security-opt no-new-privileges week5-bot:ci caddy version \
+            || { echo "::error title=CaddyExec::caddy failed to exec under no-new-privileges (exit 126 = file-capability/EPERM)"; exit 1; }
+
       - name: Smoke import (offline, mock mode)
         run: |
           docker run --rm -e LLM_PROVIDER=mock -e LOG_DIR=/tmp/l -e MLRUNS_DIR=/tmp/m \
